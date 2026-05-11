@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5-Year CDO Tranche Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f7f8fc;--surface:#fff;--surface2:#f0f2f8;--surface3:#e8ebf4;
+  --border:rgba(0,0,0,.07);--border2:rgba(0,0,0,.12);
+  --text:#141824;--muted:#5a6380;--dim:#9aa3b8;
+  --conv:#1a5faa;--conv-l:#4a8fd4;--conv-bg:rgba(26,95,170,.06);
+  --cop:#9b3a1a;--cop-l:#c94a1a;--cop-bg:rgba(155,58,26,.06);
+  --equity:#c94a1a;--equity-l:#e06030;--equity-bg:rgba(201,74,26,.08);
+  --mezz:#a07010;--mezz-l:#c49020;--mezz-bg:rgba(160,112,16,.08);
+  --senior:#1a5faa;--senior-l:#2472c8;--senior-bg:rgba(26,95,170,.08);
+  --green:#0a6e48;--green-l:#0f9a68;--accent:#2472c8;--purple:#5b3fa0;
+}
+html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);}
+/* HEADER */
+header{flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--border2);padding:1.2rem 2rem 1rem;position:relative;}
+header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--conv) 0%,var(--conv-l) 40%,var(--cop-l) 60%,var(--cop) 100%);}
+.hflex{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;}
+.htag{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem;}
+header h1{font-family:'Instrument Serif',serif;font-size:clamp(1.3rem,3vw,2rem);font-weight:400;letter-spacing:-.02em;line-height:1.1;}
+header h1 em{font-style:italic;color:var(--conv);}
+.hsub{font-size:.78rem;color:var(--muted);font-weight:300;line-height:1.6;margin-top:.3rem;}
+.hmeta{display:flex;gap:1.4rem;flex-wrap:wrap;margin-top:.8rem;}
+.mi{display:flex;flex-direction:column;gap:1px;}
+.ml{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);}
+.mv{font-family:'DM Mono',monospace;font-size:11px;color:var(--text);font-weight:500;}
+.method-badges{display:flex;gap:.6rem;align-items:center;}
+.mbadge{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.06em;padding:4px 10px;border-radius:3px;font-weight:500;}
+.mbadge.conv{background:var(--conv-bg);color:var(--conv);border:1px solid rgba(26,95,170,.2);}
+.mbadge.cop{background:var(--cop-bg);color:var(--cop-l);border:1px solid rgba(201,74,26,.2);}
+/* NAV */
+.topnav{flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--border);}
+.topnav-inner{display:flex;gap:0;padding:0 2rem;overflow-x:auto;}
+.tnav{padding:10px 16px;font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;background:none;border:none;color:var(--dim);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:color .15s,border-color .15s;}
+.tnav.active{color:var(--text);border-bottom-color:var(--text);}
+.tnav.conv-tab.active{color:var(--conv);border-bottom-color:var(--conv);}
+.tnav.cop-tab.active{color:var(--cop-l);border-bottom-color:var(--cop-l);}
+.tnav.lec-tab.active{color:var(--purple);border-bottom-color:var(--purple);}
+.tab-divider{width:1px;background:var(--border2);margin:8px 4px;flex-shrink:0;}
+.tab-section{display:none;}.tab-section.active{display:block;}
+/* LAYOUT */
+.layout{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.scroll{flex:1;overflow-y:auto;}
+main{max-width:1140px;margin:0 auto;padding:1.5rem 2rem 3rem;}
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.3rem;}
+.card.conv-card{border-left:3px solid var(--conv);}
+.card.cop-card{border-left:3px solid var(--cop-l);}
+.ct{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:.9rem;}
+/* SECTION TITLES */
+.stitle{font-family:'Instrument Serif',serif;font-size:1.1rem;font-weight:400;color:var(--text);margin:1.8rem 0 .9rem;display:flex;align-items:center;gap:10px;}
+.stitle::after{content:'';flex:1;height:1px;background:var(--border2);}
+.stitle.conv-title{color:var(--conv);}
+.stitle.cop-title{color:var(--cop-l);}
+.stitle.lec-title{color:var(--purple);}
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;}
+.s2{grid-column:span 2;}
+@media(max-width:720px){.g2,.g3{grid-template-columns:1fr;}.s2{grid-column:auto;}}
+/* STAT */
+.stat{background:var(--surface2);border-radius:6px;padding:.85rem 1rem;border:1px solid var(--border);}
+.sl{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+.sv{font-family:'DM Mono',monospace;font-size:1.2rem;font-weight:500;color:var(--text);}
+.ss{font-size:11px;color:var(--dim);margin-top:3px;}
+/* TABLES */
+.tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.tbl th{text-align:left;padding:7px 10px;color:var(--dim);font-weight:400;font-size:10px;letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--border2);}
+.tbl td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:var(--surface2);}
+.r{text-align:right;}
+.mono{font-family:'DM Mono',monospace;font-size:11px;}
+/* RATING BADGES */
+.rb{display:inline-block;font-family:'DM Mono',monospace;font-size:10px;font-weight:500;padding:2px 7px;border-radius:3px;letter-spacing:.04em;}
+.rb-AAA,.rb-AA,.rb-A{background:rgba(10,110,72,.08);color:#0a6e48;border:1px solid rgba(10,110,72,.2);}
+.rb-BBB{background:rgba(26,95,170,.08);color:#1a5faa;border:1px solid rgba(26,95,170,.2);}
+.rb-BB{background:rgba(26,95,170,.08);color:#1a5faa;border:1px solid rgba(26,95,170,.2);}
+.rb-B{background:rgba(160,112,16,.12);color:#8a6010;border:1px solid rgba(160,112,16,.25);}
+.rb-CCCC,.rb-CCC{background:rgba(201,74,26,.12);color:#9b3a1a;border:1px solid rgba(201,74,26,.25);}
+/* WATERFALL */
+.waterfall{display:flex;flex-direction:column;border-radius:8px;overflow:hidden;border:1px solid var(--border2);height:100%;}
+.tw-row{display:flex;align-items:stretch;}
+.tw-row.senior{background:var(--senior-bg);border-bottom:1px solid rgba(26,95,170,.15);flex:2;}
+.tw-row.mezz{background:var(--mezz-bg);border-bottom:1px solid rgba(160,112,16,.15);flex:1.5;}
+.tw-row.equity{background:var(--equity-bg);flex:1.5;}
+.tw-acc{width:3px;flex-shrink:0;}
+.tw-row.senior .tw-acc{background:var(--senior);}
+.tw-row.mezz .tw-acc{background:var(--mezz-l);}
+.tw-row.equity .tw-acc{background:var(--equity);}
+.tw-body{padding:.9rem;flex:1;display:flex;flex-direction:column;justify-content:center;gap:2px;}
+.tw-name{font-size:9px;letter-spacing:.09em;text-transform:uppercase;font-weight:500;}
+.tw-row.senior .tw-name{color:var(--senior-l);}
+.tw-row.mezz .tw-name{color:var(--mezz-l);}
+.tw-row.equity .tw-name{color:var(--equity);}
+.tw-range{font-family:'DM Mono',monospace;font-size:15px;font-weight:500;color:var(--text);}
+.tw-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:6px;}
+.tw-cell{background:rgba(0,0,0,.04);border-radius:3px;padding:4px 5px;}
+.tw-cl{font-size:8px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);}
+.tw-cv{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;}
+.tw-row.senior .tw-cv{color:var(--senior-l);}
+.tw-row.mezz .tw-cv{color:var(--mezz-l);}
+.tw-row.equity .tw-cv{color:var(--equity);}
+/* INSIGHT BOXES */
+.insight{display:flex;gap:8px;background:rgba(10,110,72,.05);border:1px solid rgba(10,110,72,.15);border-radius:6px;padding:.85rem 1rem;margin:.9rem 0;}
+.ii{font-size:13px;flex-shrink:0;margin-top:1px;}
+.insight p{font-size:12px;color:var(--muted);line-height:1.8;}
+.insight strong{color:var(--green);}
+.warn-box{background:rgba(160,112,16,.05);border-color:rgba(160,112,16,.18);}
+.warn-box .ii,.warn-box strong{color:var(--mezz-l);}
+.info-box{background:rgba(26,95,170,.05);border-color:rgba(26,95,170,.15);}
+.info-box .ii,.info-box strong{color:var(--conv);}
+.cop-box{background:var(--cop-bg);border-color:rgba(201,74,26,.18);}
+.cop-box .ii,.cop-box strong{color:var(--cop-l);}
+/* CHARTS */
+.cw{position:relative;width:100%;}
+/* SCROLL TABLE */
+.sb{max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;}
+/* SLIDER */
+.srow{display:flex;align-items:center;gap:12px;margin-bottom:.9rem;}
+.srow label{font-size:12px;color:var(--muted);min-width:140px;}
+.srow input[type=range]{flex:1;accent-color:var(--accent);}
+.sval{font-family:'DM Mono',monospace;font-size:13px;color:var(--accent);min-width:44px;text-align:right;}
+/* HULL TABLE */
+.htbl{width:100%;border-collapse:collapse;font-size:12px;}
+.htbl th{text-align:center;padding:6px 8px;color:var(--dim);font-weight:400;font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--border2);}
+.htbl td{text-align:center;padding:6px 8px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;}
+.htbl .hl{color:var(--green);font-weight:500;}
+.htbl .used{background:rgba(26,95,170,.03);}
+/* FORMULA BOX */
+.fbox{background:var(--surface2);border:1px solid var(--border2);border-radius:5px;padding:.8rem 1rem;font-family:'DM Mono',monospace;font-size:11px;color:var(--green);line-height:2.2;margin:.6rem 0;}
+/* LECTURE BOXES */
+.lbox{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:6px;padding:1rem 1.1rem;margin-bottom:.9rem;}
+.lbox h4{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--purple);margin-bottom:.5rem;}
+.lbox p,.lbox li{font-size:13px;color:var(--muted);line-height:1.8;}
+.lbox ul{padding-left:1.1rem;}.lbox li{margin-bottom:.25rem;}
+.lbox.green{border-left-color:var(--green-l);}.lbox.green h4{color:var(--green);}
+.lbox.warn{border-left-color:var(--cop-l);}.lbox.warn h4{color:var(--cop-l);}
+.lbox.conv{border-left-color:var(--conv);}.lbox.conv h4{color:var(--conv);}
+/* BUTTONS */
+#run-btn{padding:8px 20px;background:var(--cop-l);color:#fff;border:none;border-radius:5px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;letter-spacing:.05em;transition:opacity .15s;}
+#run-btn:hover{opacity:.85;}#run-btn:disabled{opacity:.5;cursor:not-allowed;}
+/* SENS TABLE */
+.sens-tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.sens-tbl th{padding:6px 9px;color:var(--dim);font-weight:400;font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--border2);text-align:center;}
+.sens-tbl td{padding:6px 9px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;text-align:center;}
+.sens-tbl .hl{background:rgba(26,95,170,.06);font-weight:500;}
+/* DESIGN TAB */
+.design-split{display:grid;grid-template-columns:480px 1fr;gap:1.5rem;align-items:start;}
+.dsgn-section{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:1.2rem 0 .6rem;padding-bottom:.3rem;border-bottom:1px solid var(--border2);}
+.company-row{display:grid;grid-template-columns:22px 1fr 100px 72px 64px;gap:.45rem;align-items:center;padding:.35rem 0;border-bottom:1px solid var(--border);}
+.company-row:last-child{border-bottom:none;}
+.cr-idx{font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);text-align:center;}
+.cr-name input{width:100%;padding:3px 7px;border:1px solid var(--border2);border-radius:4px;font-size:11px;background:var(--surface2);color:var(--text);}
+.cr-name input:focus{outline:none;border-color:var(--accent);}
+.cr-rating select{width:100%;padding:3px 5px;border:1px solid var(--border2);border-radius:4px;font-size:11px;font-family:'DM Mono',monospace;background:var(--surface2);color:var(--text);cursor:pointer;}
+.cr-rating select:focus{outline:none;border-color:var(--accent);}
+.cr-pd{font-family:'DM Mono',monospace;font-size:11px;text-align:right;font-weight:500;}
+.cr-w input{width:100%;padding:3px 5px;border:1px solid var(--border2);border-radius:4px;font-size:11px;font-family:'DM Mono',monospace;text-align:right;background:var(--surface2);color:var(--text);}
+.cr-w input:focus{outline:none;border-color:var(--accent);}
+.preset-btn{padding:5px 11px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;color:var(--muted);transition:all .15s;}
+.preset-btn:hover{background:var(--surface3);color:var(--text);}
+.add-rm-btn{padding:4px 11px;border-radius:4px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;transition:all .15s;border:1px solid;}
+.add-btn{background:rgba(26,95,170,.06);color:var(--conv);border-color:rgba(26,95,170,.2);}
+.add-btn:hover{background:rgba(26,95,170,.12);}
+.rm-btn{background:rgba(201,74,26,.06);color:var(--cop-l);border-color:rgba(201,74,26,.2);}
+.rm-btn:hover{background:rgba(201,74,26,.12);}
+.tc-row{display:grid;grid-template-columns:130px 1fr 56px;gap:.7rem;align-items:center;margin-bottom:.7rem;}
+.tc-row label{font-size:12px;color:var(--muted);}
+.tc-row input[type=range]{accent-color:var(--accent);}
+.tranche-vis{display:flex;height:32px;border-radius:5px;overflow:hidden;border:1px solid var(--border2);margin:.5rem 0;}
+.tv-eq{background:var(--equity-bg);border-right:2px solid var(--equity);display:flex;align-items:center;justify-content:center;font-size:10px;font-family:'DM Mono',monospace;color:var(--equity);overflow:hidden;}
+.tv-mz{background:var(--mezz-bg);border-right:2px solid var(--mezz-l);display:flex;align-items:center;justify-content:center;font-size:10px;font-family:'DM Mono',monospace;color:var(--mezz-l);overflow:hidden;}
+.tv-sr{background:var(--senior-bg);display:flex;align-items:center;justify-content:center;font-size:10px;font-family:'DM Mono',monospace;color:var(--senior-l);overflow:hidden;}
+.drc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;margin-bottom:.9rem;}
+.drc{background:var(--surface2);border-radius:6px;padding:.75rem .9rem;border:1px solid var(--border);}
+.drc-title{font-size:9px;letter-spacing:.08em;text-transform:uppercase;font-weight:500;margin-bottom:.5rem;}
+.drc-title.conv{color:var(--conv);}
+.drc-title.cop{color:var(--cop-l);}
+.drc-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.3rem;margin-top:.4rem;}
+.drc-cell{background:rgba(0,0,0,.04);border-radius:3px;padding:3px 5px;}
+.drc-cl{font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
+.drc-cv{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;}
+.run-dsgn{padding:8px 22px;background:var(--text);color:var(--surface);border:none;border-radius:5px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;letter-spacing:.06em;transition:opacity .15s;}
+.run-dsgn:hover{opacity:.8;}.run-dsgn:disabled{opacity:.4;cursor:not-allowed;}
+.w-warn{font-size:11px;color:var(--cop-l);font-family:'DM Mono',monospace;margin-top:.3rem;display:none;}
+@media(max-width:900px){.design-split{grid-template-columns:1fr;}}
+footer{padding:1rem 2rem;border-top:1px solid var(--border);text-align:center;font-size:10px;color:var(--dim);background:var(--surface);}
+</style>
+</head>
+<body style="display:flex;flex-direction:column;">
+
+<header>
+  <div class="hflex">
+    <div>
+      <div class="htag">CDX.NA.HY.29-V18 · Hull Table 24.1 · ρ=0 &amp; ρ&gt;0</div>
+      <h1>5-Year <em>CDO</em> Tranche Analysis</h1>
+      <p class="hsub">Exact Convolution (ρ=0) vs One-Factor Gaussian Copula (ρ&gt;0) · CDX.NA.HY.29 · 10 companies · RR=40%</p>
+      <div class="hmeta">
+        <div class="mi"><div class="ml">Index</div><div class="mv">CDX.NA.HY.29-V18</div></div>
+        <div class="mi"><div class="ml">Companies</div><div class="mv">10</div></div>
+        <div class="mi"><div class="ml">Recovery Rate</div><div class="mv">40%</div></div>
+        <div class="mi"><div class="ml">PD Source</div><div class="mv">Hull 24.1</div></div>
+        <div class="mi"><div class="ml">MC Paths</div><div class="mv">100,000</div></div>
+      </div>
+    </div>
+    <div class="method-badges">
+      <span class="mbadge conv">Method 1: Convolution ρ=0</span>
+      <span style="color:var(--dim);font-size:14px;">vs</span>
+      <span class="mbadge cop">Method 2: Copula ρ&gt;0</span>
+    </div>
+  </div>
+</header>
+
+<div class="topnav">
+  <div class="topnav-inner">
+    <button class="tnav active" onclick="sw('portfolio',this)">Portfolio</button>
+    <button class="tnav conv-tab" onclick="sw('convolution',this)">Convolution (ρ=0)</button>
+    <button class="tnav cop-tab" onclick="sw('copula',this)">Copula (ρ&gt;0)</button>
+    <button class="tnav" onclick="sw('comparison',this)">Comparison</button>
+    <div class="tab-divider"></div>
+    <button class="tnav lec-tab" onclick="sw('theory',this)">Theory</button>
+  </div>
+</div>
+
+<div class="layout">
+<div class="scroll" id="mainScroll">
+
+<!-- ════ TAB 1: PORTFOLIO + DESIGN ════ -->
+<div class="tab-section active" id="tab-portfolio">
+<main>
+
+  <!-- FIXED PORTFOLIO -->
+  <div class="stitle">Portfolio — CDX.NA.HY.29-V18</div>
+  <div class="card" style="margin-bottom:1.25rem;">
+    <div class="ct">10 Companies · CDX North America High Yield Series 29, V18 · S&amp;P Global, Annex Date: 22 Apr 2026</div>
+    <table class="tbl">
+      <thead><tr><th>#</th><th>Company</th><th>Ticker</th><th>Rating</th><th class="r">5Y PD</th><th class="r">Weight</th><th class="r">LGD/Notional</th><th>Industry</th></tr></thead>
+      <tbody id="port-tbody"></tbody>
+    </table>
+    <p style="font-size:11px;color:var(--dim);margin-top:.8rem;">5Y cumulative PD from Hull Table 24.1 (S&amp;P 1981–2019). Equal weight 10% each. Recovery Rate = 40% → LGD = 6% per default.</p>
+  </div>
+
+  <!-- HULL TABLE -->
+  <div class="stitle">Hull Table 24.1 — Average Cumulative Default Rates (%)</div>
+  <div class="card" style="margin-bottom:1.25rem;">
+    <div class="ct">Source: S&amp;P Global Ratings Research &amp; CreditPro®, 1981–2019 · 5Y column used in this analysis</div>
+    <table class="htbl">
+      <thead><tr><th style="text-align:left">Rating</th><th>1Y</th><th>2Y</th><th>3Y</th><th>4Y</th><th class="hl">5Y ✓</th></tr></thead>
+      <tbody>
+        <tr><td style="text-align:left"><span class="rb rb-AAA">AAA</span></td><td>0.00%</td><td>0.03%</td><td>0.13%</td><td>0.24%</td><td class="hl">0.35%</td></tr>
+        <tr><td style="text-align:left"><span class="rb rb-AA">AA</span></td><td>0.02%</td><td>0.06%</td><td>0.12%</td><td>0.21%</td><td class="hl">0.31%</td></tr>
+        <tr><td style="text-align:left"><span class="rb rb-A">A</span></td><td>0.05%</td><td>0.14%</td><td>0.23%</td><td>0.35%</td><td class="hl">0.47%</td></tr>
+        <tr class="used"><td style="text-align:left"><span class="rb rb-BBB">BBB</span></td><td>0.16%</td><td>0.45%</td><td>0.78%</td><td>1.17%</td><td class="hl">1.58%</td></tr>
+        <tr class="used"><td style="text-align:left"><span class="rb rb-BB">BB</span></td><td>0.61%</td><td>1.92%</td><td>3.48%</td><td>5.05%</td><td class="hl">6.52%</td></tr>
+        <tr class="used"><td style="text-align:left"><span class="rb rb-B">B</span></td><td>3.33%</td><td>7.71%</td><td>11.55%</td><td>14.58%</td><td class="hl">16.93%</td></tr>
+        <tr><td style="text-align:left"><span class="rb rb-CCCC">CCC/C</span></td><td>27.08%</td><td>36.64%</td><td>41.41%</td><td>44.10%</td><td class="hl">46.19%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- DESIGN SANDBOX -->
+  <div class="stitle">Structure Designer — Sandbox</div>
+  <p style="font-size:13px;color:var(--muted);line-height:1.75;margin-bottom:1.25rem;">調整各評級的公司家數與 Tranche 切割點，即時看 Convolution 結果。按 Calculate 同時執行 Copula MC（50,000 paths）。</p>
+
+  <div class="design-split">
+    <!-- LEFT CONTROLS -->
+    <div>
+
+      <div class="dsgn-section">評級分佈（各評級公司家數）</div>
+      <div id="ds-rating-sliders"></div>
+      <div style="margin:.6rem 0 .4rem;display:flex;align-items:center;gap:1rem;">
+        <span style="font-size:12px;color:var(--muted);">總公司數：</span>
+        <span id="ds-total-n" style="font-family:'DM Mono',monospace;font-size:1.1rem;font-weight:500;color:var(--text);">10</span>
+        <span style="font-size:11px;color:var(--dim)">家（等權重）</span>
+      </div>
+      <div id="ds-rating-dist" style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.4rem;"></div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.4rem;">
+        <button class="preset-btn" onclick="applyPreset('base')">本作業組合</button>
+        <button class="preset-btn" onclick="applyPreset('ig')">純 IG</button>
+        <button class="preset-btn" onclick="applyPreset('hy')">純 HY</button>
+        <button class="preset-btn" onclick="applyPreset('mixed')">混合</button>
+      </div>
+
+      <div class="dsgn-section">Tranche 切割點</div>
+      <div class="tc-row">
+        <label>Equity 上限 A₁</label>
+        <input type="range" id="ds-a1" min="1" max="49" value="3" step="1" oninput="dsUpdateCuts()">
+        <span class="sval" id="ds-a1-v">3%</span>
+      </div>
+      <div class="tc-row">
+        <label>Mezzanine 上限 A₂</label>
+        <input type="range" id="ds-a2" min="2" max="60" value="6" step="1" oninput="dsUpdateCuts()">
+        <span class="sval" id="ds-a2-v">6%</span>
+      </div>
+      <div id="ds-tranche-vis" class="tranche-vis"></div>
+      <p style="font-size:11px;color:var(--dim);margin-bottom:.9rem;">Senior 上限固定為 100%</p>
+
+      <div class="dsgn-section">Copula 設定</div>
+      <div class="tc-row">
+        <label>Correlation ρ</label>
+        <input type="range" id="ds-rho" min="0" max="0.9" value="0.3" step="0.05" oninput="dsUpdateRho()">
+        <span class="sval" id="ds-rho-v">0.30</span>
+      </div>
+      <p style="font-size:11px;color:var(--dim);margin-bottom:1rem;">ρ=0：≡ 卷積法　ρ=0.3：市場基準　ρ=0.7–0.9：危機情境</p>
+
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+        <button class="run-dsgn" id="ds-run-btn" onclick="dsRun()">▶ Calculate Both Methods</button>
+        <span id="ds-status" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);"></span>
+      </div>
+    </div>
+
+    <!-- RIGHT RESULTS -->
+    <div>
+      <div class="dsgn-section">Convolution (ρ=0) — 即時結果</div>
+      <div class="drc-grid">
+        <div class="drc"><div class="drc-title conv">Equity</div><div class="drc-row"><div class="drc-cell"><div class="drc-cl">P(any)</div><div class="drc-cv" id="dc-eq-pa" style="color:var(--equity)">—</div></div><div class="drc-cell"><div class="drc-cl">P(wipe)</div><div class="drc-cv" id="dc-eq-pf">—</div></div><div class="drc-cell"><div class="drc-cl">EL</div><div class="drc-cv" id="dc-eq-el">—</div></div></div></div>
+        <div class="drc"><div class="drc-title conv">Mezzanine</div><div class="drc-row"><div class="drc-cell"><div class="drc-cl">P(any)</div><div class="drc-cv" id="dc-mz-pa" style="color:var(--mezz-l)">—</div></div><div class="drc-cell"><div class="drc-cl">P(wipe)</div><div class="drc-cv" id="dc-mz-pf">—</div></div><div class="drc-cell"><div class="drc-cl">EL</div><div class="drc-cv" id="dc-mz-el">—</div></div></div></div>
+        <div class="drc"><div class="drc-title conv">Senior</div><div class="drc-row"><div class="drc-cell"><div class="drc-cl">P(any)</div><div class="drc-cv" id="dc-sr-pa" style="color:var(--conv)">—</div></div><div class="drc-cell"><div class="drc-cl">P(wipe)</div><div class="drc-cv" id="dc-sr-pf">—</div></div><div class="drc-cell"><div class="drc-cl">EL</div><div class="drc-cv" id="dc-sr-el">—</div></div></div></div>
+      </div>
+
+      <div class="dsgn-section">Copula MC (ρ=<span id="ds-rho-label">0.30</span>) — 按 Calculate 執行</div>
+      <div class="drc-grid">
+        <div class="drc"><div class="drc-title cop">Equity</div><div class="drc-row"><div class="drc-cell"><div class="drc-cl">P(any)</div><div class="drc-cv" id="dm-eq-pa" style="color:var(--equity)">—</div></div><div class="drc-cell"><div class="drc-cl">P(wipe)</div><div class="drc-cv" id="dm-eq-pf">—</div></div><div class="drc-cell"><div class="drc-cl">EL</div><div class="drc-cv" id="dm-eq-el">—</div></div></div></div>
+        <div class="drc"><div class="drc-title cop">Mezzanine</div><div class="drc-row"><div class="drc-cell"><div class="drc-cl">P(any)</div><div class="drc-cv" id="dm-mz-pa" style="color:var(--mezz-l)">—</div></div><div class="drc-cell"><div class="drc-cl">P(wipe)</div><div class="drc-cv" id="dm-mz-pf">—</div></div><div class="drc-cell"><div class="drc-cl">EL</div><div class="drc-cv" id="dm-mz-el">—</div></div></div></div>
+        <div class="drc"><div class="drc-title cop">Senior</div><div class="drc-row"><div class="drc-cell"><div class="drc-cl">P(any)</div><div class="drc-cv" id="dm-sr-pa" style="color:var(--cop-l)">—</div></div><div class="drc-cell"><div class="drc-cl">P(wipe)</div><div class="drc-cv" id="dm-sr-pf">—</div></div><div class="drc-cell"><div class="drc-cl">EL</div><div class="drc-cv" id="dm-sr-el">—</div></div></div></div>
+      </div>
+
+      <div class="dsgn-section">Loss PMF — Convolution</div>
+      <div class="card" style="padding:1rem;">
+        <div class="cw" style="height:200px;"><canvas id="ds-pmf-chart" role="img" aria-label="Designer PMF chart"></canvas></div>
+      </div>
+
+      <div class="dsgn-section">Portfolio Summary</div>
+      <div class="card" style="padding:1rem;">
+        <div class="g3" style="margin-bottom:.7rem;">
+          <div class="stat"><div class="sl">公司數量</div><div class="sv" id="ds-cnt" style="font-size:1rem;">10</div></div>
+          <div class="stat"><div class="sl">加權平均 PD</div><div class="sv" id="ds-avgpd" style="font-size:1rem;color:var(--conv)">—</div></div>
+          <div class="stat"><div class="sl">P(0 defaults)</div><div class="sv" id="ds-p0" style="font-size:1rem;">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- ════ TAB 2: CONVOLUTION ════ -->
+<div class="tab-section" id="tab-convolution">
+<main>
+  <div class="stitle conv-title">Method 1 — Exact Convolution (ρ = 0)</div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="ct">Tranche Summary — Fixed Portfolio</div>
+      <table class="tbl">
+        <thead><tr><th>Tranche</th><th class="r">Attach</th><th class="r">Detach</th><th class="r">P(any loss)</th><th class="r">P(wipeout)</th><th class="r">Exp. Loss</th><th class="r">EL/Width</th></tr></thead>
+        <tbody id="conv-summary-tbody"></tbody>
+      </table>
+      <div class="insight warn-box" style="margin-top:1rem;">
+        <div class="ii">!</div>
+        <p><strong>Equity = Mezzanine P(any loss)：</strong> LGD=6% 同時穿越 0%（Equity 附著）和 3%（Mezzanine 附著）兩個附著點，第一筆違約使兩個 tranche 同時受損。P(any loss) 無法區分兩者，須看 <strong>EL/Width</strong>。</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">Tranche Risk Metrics</div>
+      <div class="cw" style="height:220px;"><canvas id="convTrChart" role="img" aria-label="Tranche P(any), P(wipe), EL"></canvas></div>
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:.7rem;">
+        <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><span style="width:10px;height:10px;border-radius:2px;background:#c94a1a;display:inline-block"></span>P(any loss)</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><span style="width:10px;height:10px;border-radius:2px;background:#7a2010;display:inline-block"></span>P(wipeout)</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><span style="width:10px;height:10px;border-radius:2px;background:#0a5030;display:inline-block"></span>Exp. Loss</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stitle conv-title">Portfolio Loss Distribution</div>
+  <div class="card">
+    <div class="ct">5-Year Loss PMF — Exact Convolution</div>
+    <div class="cw" style="height:255px;"><canvas id="convLossChart" role="img" aria-label="Loss PMF convolution"></canvas></div>
+    <div style="display:flex;gap:1.2rem;flex-wrap:wrap;margin-top:.9rem;">
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><span style="width:11px;height:11px;border-radius:2px;background:#c8d0e0;border:1px solid #b0bace;display:inline-block"></span>k=0（無損失）</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><span style="width:11px;height:11px;border-radius:2px;background:#c94a1a;display:inline-block"></span>k=1：Equity+Mezz 受損（損失 6%）</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><span style="width:11px;height:11px;border-radius:2px;background:#b88a18;display:inline-block"></span>k=2：Senior 受損（損失 12%）</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><span style="width:11px;height:11px;border-radius:2px;background:#8899aa;display:inline-block"></span>k≥3：超出所有 tranche（損失 ≥18%）</span>
+    </div>
+  </div>
+
+  <div class="stitle conv-title">Methodology</div>
+  <div class="g2">
+    <div>
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="ct">Step 1 — Loss Given Default per Company</div>
+        <div class="fbox">LGD = (1/n) × (1 − RR)<br>= 10% × (1 − 40%) = <strong>6% of portfolio notional</strong><br><br>n=10 companies（等權重），RR=40%（固定假設）</div>
+      </div>
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="ct">Step 2 — Convolution Algorithm</div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:.5rem;">BB（6.52%）和 B（16.93%）的 PD 不同，<strong>不能用二項分佈</strong>（二項分佈要求每次試驗概率相同）。逐步卷積：</p>
+        <div class="fbox">f[0]=1, f[k]=0 for k&gt;0   ← 初始：0家違約=100%<br>For i = 1 to n:<br>  f[k] = f[k]×(1−pᵢ)        ← 第i家沒違約<br>       + f[k−1]×pᵢ          ← 第i家違約<br><br>→ 解析精確解，無任何抽樣誤差</div>
+      </div>
+      <div class="card">
+        <div class="ct">Step 3 — Tranche Metrics</div>
+        <div class="fbox">P(hit)  = Σ f[k]  for k×LGD &gt; attach<br>P(wipe) = Σ f[k]  for k×LGD &gt; detach<br><br>EL = Σ f[k] × max(min(k×LGD, detach) − attach, 0)<br><br>EL/Width = EL ÷ (detach − attach)　← tranche 定價依據</div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="ct">Loss Distribution — Full Table</div>
+        <div class="sb">
+          <table class="tbl" style="font-size:11px;">
+            <thead><tr><th>k</th><th>Loss</th><th>P(exactly k)</th><th>P(≥k) = Nth-to-Default</th><th>Tranche hit</th></tr></thead>
+            <tbody id="conv-loss-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ct">Portfolio Statistics</div>
+        <div class="g2">
+          <div class="stat"><div class="sl">Avg PD (unweighted)</div><div class="sv" id="conv-avgpd" style="color:var(--conv)">—</div></div>
+          <div class="stat"><div class="sl">P(0 defaults)</div><div class="sv" id="conv-p0">—</div></div>
+          <div class="stat"><div class="sl">Portfolio EL</div><div class="sv" id="conv-el" style="color:var(--conv)">—</div></div>
+          <div class="stat"><div class="sl">E[# defaults]</div><div class="sv" id="conv-ek">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- ════ TAB 3: COPULA ════ -->
+<div class="tab-section" id="tab-copula">
+<main>
+  <div class="stitle cop-title">Method 2 — One-Factor Gaussian Copula (ρ &gt; 0)</div>
+
+  <div class="card cop-card" style="margin-bottom:1.25rem;">
+    <div class="ct" style="color:var(--cop-l)">Simulation Controls · Monte Carlo N = 100,000</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:1rem;line-height:1.8;">
+      每家公司的複合因子 xᵢ = <strong style="color:var(--text)">√ρ·M + √(1−ρ)·Zᵢ</strong>，M 是所有公司共享的市場因子，Zᵢ 是公司 i 的特異因子，均為 N(0,1)。
+      公司 i 在 5 年內違約 ⟺ xᵢ &lt; Φ⁻¹(PDᵢ)。給定 M 已知，各公司條件獨立。<br>
+      <span style="color:var(--dim)">抽樣誤差：N=100,000 約 ±0.15%，每次 Run 結果略有不同屬正常隨機波動。</span>
+    </div>
+    <div class="srow">
+      <label>Correlation ρ</label>
+      <input type="range" id="rho-slider" min="0" max="0.9" value="0.3" step="0.05" oninput="updateRhoDisplay()">
+      <span class="sval" id="rho-val">0.30</span>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:1rem;">
+      ρ=0：完全獨立（等同卷積法，作為驗證）　ρ=0.3：市場歷史常用基準　ρ=0.7–0.9：金融危機情境
+    </div>
+    <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+      <button id="run-btn" onclick="runMonteCarlo()">▶ Run Simulation</button>
+      <div id="mc-status" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);">尚未執行 — 請按 Run</div>
+    </div>
+  </div>
+
+  <div class="g2" style="margin-bottom:1.25rem;">
+    <div class="card">
+      <div class="ct">Copula MC Results</div>
+      <table class="tbl" style="font-size:12px;">
+        <thead><tr><th>Tranche</th><th class="r">P(any loss)</th><th class="r">P(wipeout)</th><th class="r">Exp. Loss</th></tr></thead>
+        <tbody id="mc-results-tbody">
+          <tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--dim);font-size:12px;">按 Run Simulation 以取得結果</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="ct">Loss Distribution — Copula MC</div>
+      <div class="cw" style="height:200px;"><canvas id="mc-pmf-chart" role="img" aria-label="Copula MC loss PMF"></canvas></div>
+    </div>
+  </div>
+
+  <div class="stitle cop-title">Senior P(any loss) vs ρ — Accumulated Runs</div>
+  <div class="card">
+    <div class="ct">每次 Run 累積一個資料點 — 試不同 ρ 值後，可看到完整趨勢</div>
+    <div class="cw" style="height:240px;"><canvas id="rho-senior-chart" role="img" aria-label="Senior PD vs rho"></canvas></div>
+    <p style="font-size:11px;color:var(--dim);margin-top:.7rem;">灰色虛線 = 卷積法基準（ρ=0 精確解）。本組合 PD 偏高（BB+B），ρ 上升時損失分佈向兩端集中（k=0 和高 k 概率上升），使 Senior P(any loss) <strong>隨 ρ 上升而下降</strong>。這是高 PD 組合的特有現象：正相關讓「剛好 2 家違約」的中間情境減少，反而保護了 Senior。低 PD 的 IG 組合行為相反。</p>
+  </div>
+
+  <div class="insight cop-box" style="margin-top:1rem;">
+    <div class="ii">!</div>
+    <p><strong>Fat Tail 效應：</strong> ρ &gt; 0 讓損失分佈向兩端集中——k=0（全無損失）和高 k（大量違約）的概率上升，中間 k 值的概率下降。Senior 需要多家同時違約才受損，因此對 ρ 最敏感；Equity 幾乎任何 ρ 下都高概率受損，對 ρ 相對鈍感。</p>
+  </div>
+</main>
+</div>
+
+<!-- ════ TAB 4: COMPARISON ════ -->
+<div class="tab-section" id="tab-comparison">
+<main>
+  <div class="stitle">Convolution vs Copula — Side-by-Side</div>
+
+  <div class="card" style="margin-bottom:.9rem;">
+    <div class="ct">Tranche Results Comparison（Copula 欄需先在 Copula 頁執行模擬）</div>
+    <table class="tbl" style="font-size:12px;">
+      <thead><tr>
+        <th>Tranche</th>
+        <th class="r" style="color:var(--conv)">Conv P(any)</th>
+        <th class="r" style="color:var(--cop-l)">Copula P(any)</th>
+        <th class="r">Δ P(any)</th>
+        <th class="r" style="color:var(--conv)">Conv EL</th>
+        <th class="r" style="color:var(--cop-l)">Copula EL</th>
+        <th class="r">Δ EL</th>
+      </tr></thead>
+      <tbody id="cmp-tbody">
+        <tr><td colspan="7" style="text-align:center;padding:1.5rem;color:var(--dim);font-size:12px;">前往 Copula 頁執行模擬後自動更新</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="insight info-box" style="margin-bottom:1.25rem;">
+    <div class="ii">i</div>
+    <p><strong>如何解讀 Δ：</strong> Δ &gt; 0 表示引入正相關後風險上升。<strong>本組合（BB+B，高 PD）的 Senior Δ 為負</strong>——ρ 上升反而讓 Senior 更安全，因為損失分佈兩極化後「剛好 k=2 違約」的中間情境減少。這和教科書描述的 IG 組合行為相反，是本組合的重要特徵，也說明 Copula 的影響取決於組合的 PD 水準。</p>
+  </div>
+
+  <div class="g2" style="margin-bottom:1.25rem;">
+    <div class="card">
+      <div class="ct">PMF Comparison — Convolution vs Copula</div>
+      <div class="cw" style="height:240px;"><canvas id="cmp-pmf-chart" role="img" aria-label="PMF comparison"></canvas></div>
+      <div style="display:flex;gap:1.2rem;flex-wrap:wrap;margin-top:.7rem;">
+        <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><span style="width:12px;height:3px;background:#2472c8;display:inline-block"></span>Convolution ρ=0</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><span style="width:12px;height:3px;background:#c94a1a;display:inline-block"></span>Copula MC（最後執行的 ρ）</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">Senior P(any loss) vs ρ — All Runs</div>
+      <div class="cw" style="height:240px;"><canvas id="cmp-rho-chart" role="img" aria-label="Senior PD vs rho all runs"></canvas></div>
+    </div>
+  </div>
+
+  <div class="stitle">Scenario Analysis (Convolution, ρ=0)</div>
+  <div class="card" style="margin-bottom:1.25rem;">
+    <div class="ct">所有可能的 BB/B 組合（0 BB+10 B 至 10 BB+0 B）— RR=40%，Tranche 0–3%/3–6%/6–10%</div>
+    <div style="display:flex;gap:1.2rem;flex-wrap:wrap;margin-bottom:.8rem;">
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><span style="width:12px;height:3px;background:#c94a1a;display:inline-block"></span>Equity P(any loss)</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><span style="width:12px;height:3px;background:#2472c8;display:inline-block"></span>Senior P(any loss)</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><span style="width:12px;height:3px;border-top:2px dashed #0a6e48;display:inline-block"></span>Portfolio EL</span>
+    </div>
+    <div class="cw" style="height:260px;"><canvas id="scenChart" role="img" aria-label="Scenario comparison across BB/B compositions"></canvas></div>
+    <p style="font-size:11px;color:var(--dim);margin-top:.7rem;">★ 本作業組合（5 BB + 5 B）在 x 軸第 6 格。Senior 對組合信評分佈最敏感，從全 B（≈52%）到全 BB（≈13%）差距近 40 個百分點。</p>
+  </div>
+
+  <div class="stitle">Recovery Rate Sensitivity (Convolution, ρ=0)</div>
+  <div class="card" style="margin-bottom:1rem;">
+    <div class="srow">
+      <label>Recovery Rate (RR)</label>
+      <input type="range" id="rr-slider" min="0" max="80" value="40" step="5" oninput="updateSens()">
+      <span class="sval" id="rr-val">40%</span>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:1rem;">LGD per default = (1−RR) × 10% = <span id="lgd-disp" style="color:var(--green);font-family:'DM Mono',monospace;">6.0%</span></div>
+    <div class="cw" style="height:230px;"><canvas id="sensChart" role="img" aria-label="Sensitivity to RR"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="ct">Full Sensitivity Table</div>
+    <table class="sens-tbl">
+      <thead><tr><th>RR</th><th>LGD</th><th style="color:var(--equity)">Equity P(any)</th><th style="color:var(--mezz-l)">Mezz P(any)</th><th style="color:var(--senior-l)">Senior P(any)</th><th>Portfolio EL</th></tr></thead>
+      <tbody id="sens-tbody"></tbody>
+    </table>
+  </div>
+  <div class="insight" style="margin-top:1rem;">
+    <div class="ii">★</div>
+    <p><strong>Senior 對 RR 呈非線性階梯式下降：</strong> 觸發 Senior 所需最低違約家數 k_min = ⌈6% ÷ LGD⌉ 是整數，每當 RR 讓 k_min 從 2→3→4，P(any loss) 就跳降一大步。Equity 幾乎不受 RR 影響，因為任何違約（損失 &gt; 0%）即觸發。</p>
+  </div>
+</main>
+</div>
+
+<!-- ════ TAB 5: THEORY ════ -->
+<div class="tab-section" id="tab-theory">
+<main>
+  <div class="stitle lec-title">Theory — Gaussian Copula &amp; CDO Pricing</div>
+  <div class="g2">
+    <div>
+      <div class="lbox">
+        <h4>什麼是 Copula？— Sklar's Theorem</h4>
+        <p>Copula 是把多個邊際分佈連結成聯合分佈的函數：</p>
+        <div class="fbox" style="color:var(--purple)">F(x₁,...,xₙ) = C(F₁(x₁),...,Fₙ(xₙ))<br><br>C = Copula 函數<br>Fᵢ = 公司 i 的違約時間邊際分佈（由 PD 決定）</div>
+        <p>關鍵靈活性：可以在不改變任何公司個別 PD 的情況下，單獨調整公司之間的相關性結構。</p>
+      </div>
+      <div class="lbox">
+        <h4>Gaussian Copula — 三步驟</h4>
+        <div class="fbox" style="color:var(--purple)">1. τᵢ → uᵢ = F_τ(τᵢ) ∈ [0,1]   uniform 化<br>2. uᵢ → xᵢ = Φ⁻¹(uᵢ) ~ N(0,1)  常態化<br>3. (x₁,...,xₙ) ~ N(0, Σ)         放入相關矩陣<br><br>C = Φₙ(Φ⁻¹(u₁),...,Φ⁻¹(uₙ); Σ)</div>
+      </div>
+      <div class="lbox">
+        <h4>One-Factor Gaussian Copula — CDO 定價標準模型</h4>
+        <p>為避免估計 n×n 相關矩陣，簡化為一個市場系統性因子 M：</p>
+        <div class="fbox" style="color:var(--purple)">xᵢ = √ρ·M + √(1−ρ)·Zᵢ<br><br>M ~ N(0,1)：所有公司共享的市場因子<br>Zᵢ ~ N(0,1)：公司 i 的特異因子（相互獨立）<br><br>公司 i 違約 ⟺ xᵢ &lt; Φ⁻¹(PDᵢ)<br><br>P(公司 i 違約 | M) = Φ([Φ⁻¹(PDᵢ) − √ρ·M] / √(1−ρ))</div>
+        <p>給定 M，各公司<strong>條件獨立</strong>。ρ=0 時 M 消失，退化為本作業的卷積法（可作為 MC 驗證）。</p>
+      </div>
+    </div>
+    <div>
+      <div class="lbox">
+        <h4>ρ 如何影響損失分佈與各 Tranche？</h4>
+        <ul>
+          <li><strong>ρ → 0：</strong>損失集中中間值（少數獨立違約）</li>
+          <li><strong>ρ → 1：</strong>損失集中兩端（要麼全無事，要麼系統性崩潰）</li>
+        </ul>
+        <p style="margin-top:.5rem;"><strong>對 Senior 的影響取決於組合 PD 水準：</strong><br>
+        低 PD 組合（IG）：ρ 上升 → Senior 變危險（極端崩潰情境概率上升）<br>
+        高 PD 組合（HY）：ρ 上升 → Senior 反而受益（「剛好足夠觸發 Senior」的中間情境減少）<br>
+        本作業為 BB+B 高 PD 組合，屬於後者，實驗可在 Copula 頁驗證。</p>
+        <p style="margin-top:.5rem;">Equity spread 對 ρ 呈負相關（ρ升 → Equity spread 降）；Senior spread 的方向則視 PD 水準而定。</p>
+      </div>
+      <div class="lbox">
+        <h4>Implied Correlation — Correlation Smile</h4>
+        <p>市場上不同 tranche 的 spread 反推出的 implied ρ 不一樣，形成 <strong>correlation smile（或 skew）</strong>，說明單一 ρ 值無法完整描述市場，是 Gaussian Copula 的根本限制之一。</p>
+      </div>
+      <div class="lbox warn">
+        <h4>2008 年金融危機 — Copula 的失敗</h4>
+        <ul>
+          <li><strong>ρ 被低估：</strong>歷史估計 ρ≈0.3，危機時實際飆升至 0.7–0.9，所有資產同步崩潰</li>
+          <li><strong>Gaussian 尾端太薄：</strong>常態分佈低估了系統性崩潰的頻率（fat tail 被忽視）</li>
+          <li><strong>Correlation smile 被忽視：</strong>市場 implied ρ 不是常數，模型假設它是</li>
+          <li><strong>模型被誤用：</strong>定價工具被當作風險管理工具，Senior tranche 被大量評為 AAA</li>
+        </ul>
+        <p style="margin-top:.6rem;">本作業用 ρ=0 算出的 Senior PD 是<strong>最樂觀估計（下限）</strong>。現實中 ρ&gt;0，Senior 實際風險更高，在 Copula 頁可驗證。</p>
+      </div>
+      <div class="lbox conv">
+        <h4>Nth-to-Default Swap 與 CDO 的數學等價</h4>
+        <p>CDO tranche 和 Nth-to-Default basket swap 共用同一個損失分佈：</p>
+        <ul>
+          <li>P(≥1 家違約) = First-to-Default 觸發概率 = Convolution 頁 P(≥k) 表第 1 行</li>
+          <li>P(≥2 家違約) = Second-to-Default 觸發概率 = Senior tranche 的 P(any loss)</li>
+        </ul>
+        <p style="margin-top:.5rem;">反直覺：ρ 上升讓 FtD spread <strong>下降</strong>（「只有一家違約」中間情境減少）——和 Senior tranche 方向相反，是 Copula 最直觀的反直覺結論。</p>
+      </div>
+      <div class="lbox conv">
+        <h4>Correlation Trading</h4>
+        <ul>
+          <li><strong>Long Correlation（買 Equity 保護 + 賣 Senior 保護）：</strong>押注 ρ 上升（危機）。Senior spread 上升使賣出的保護虧損，但 Equity spread 下降使買入的保護獲利，整體受益。</li>
+          <li><strong>Short Correlation（賣 Equity 保護 + 買 Senior 保護）：</strong>押注市場平靜。平靜時 Equity spread 高，賣出收入豐厚；Senior spread 低，買入成本低。2006–2007 年大行其道，2008 年 ρ 急升，全部爆倉。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+</div><!-- end scroll -->
+</div><!-- end layout -->
+
+<footer>CDO Tranche Analysis · CDX.NA.HY.29-V18 (S&amp;P Global, Apr 2026) · Hull Table 24.1 (1981–2019) · Convolution ρ=0 &amp; Gaussian Copula MC ρ&gt;0 · RR=40%</footer>
+
+<script>
+// ══════════════════════════════════════
+// DATA
+// ══════════════════════════════════════
+const companies=[
+  {name:"American Airlines Group Inc.",ticker:"AAL",rating:"BB",pd:0.0652,industry:"航空"},
+  {name:"Sprint Communications, Inc.", ticker:"S",  rating:"B", pd:0.1693,industry:"電信"},
+  {name:"THE GAP, INC.",               ticker:"GPS",rating:"BB",pd:0.0652,industry:"零售"},
+  {name:"MGM Resorts International",   ticker:"MGM",rating:"BB",pd:0.0652,industry:"娛樂/博彩"},
+  {name:"HCA Inc.",                    ticker:"HCA",rating:"BB",pd:0.0652,industry:"醫療"},
+  {name:"Tenet Healthcare Corporation",ticker:"THC",rating:"B", pd:0.1693,industry:"醫療"},
+  {name:"Freeport-McMoRan Inc.",        ticker:"FCX",rating:"BB",pd:0.0652,industry:"礦業"},
+  {name:"TransDigm Inc.",              ticker:"TDG",rating:"B", pd:0.1693,industry:"航太零件"},
+  {name:"NRG Energy, Inc.",            ticker:"NRG",rating:"BB",pd:0.0652,industry:"能源"},
+  {name:"Community Health Systems",    ticker:"CYH",rating:"B", pd:0.1693,industry:"醫療"},
+];
+const n=10;
+const TDEFS=[{name:"Equity",attach:0,detach:.03},{name:"Mezzanine",attach:.03,detach:.06},{name:"Senior",attach:.06,detach:.10}];
+let RR=.40, LGD=(1-RR)/n;
+const ch={};
+
+// PD lookup
+const PD_MAP={AAA:.0035,AA:.0031,A:.0047,BBB:.0158,BB:.0652,B:.1693,"CCC/C":.4619};
+const PD_COL={AAA:"#0a6e48",AA:"#0a6e48",A:"#0a6e48",BBB:"#1a5faa",BB:"#1a5faa",B:"#c49020","CCC/C":"#c94a1a"};
+
+// ══════════════════════════════════════
+// MATH UTILITIES
+// ══════════════════════════════════════
+function conv(cos,lgd){
+  const N=cos.length;
+  let d=new Array(N+1).fill(0);d[0]=1;
+  for(let i=0;i<N;i++){
+    const p=cos[i].pd,nd=new Array(N+1).fill(0);
+    for(let k=0;k<=i;k++){nd[k]+=d[k]*(1-p);nd[k+1]+=d[k]*p;}
+    d=nd;
+  }
+  return d;
+}
+function calcTr(d,lgd,tdefs){
+  return tdefs.map(t=>{
+    const N=d.length-1;
+    let pA=0,pF=0,el=0;
+    for(let k=0;k<=N;k++){
+      const l=k*lgd;
+      if(l>t.attach+1e-9)pA+=d[k];
+      if(l>=t.detach-1e-9)pF+=d[k];
+      el+=d[k]*Math.max(Math.min(l,t.detach)-t.attach,0);
+    }
+    return{...t,pA,pF,el};
+  });
+}
+
+// Rand normal (Box-Muller)
+function rn(){let u,v,s;do{u=Math.random()*2-1;v=Math.random()*2-1;s=u*u+v*v;}while(s>=1||s===0);return u*Math.sqrt(-2*Math.log(s)/s);}
+
+// Inverse normal CDF — Peter Acklam's algorithm, accurate to 1e-9
+function normInv(p){
+  if(p<=0)return-Infinity;if(p>=1)return Infinity;if(p===0.5)return 0;
+  const a=[-3.969683028665376e+01,2.209460984245205e+02,-2.759285104469687e+02,1.383577518672690e+02,-3.066479806614716e+01,2.506628277459239e+00];
+  const b=[-5.447609879822406e+01,1.615858368580409e+02,-1.556989798598866e+02,6.680131188771972e+01,-1.328068155288572e+01];
+  const c=[-7.784894002430293e-03,-3.223964580411365e-01,-2.400758277161838e+00,-2.549732539343734e+00,4.374664141464968e+00,2.938163982698783e+00];
+  const d=[7.784695709041462e-03,3.224671290700398e-01,2.445134137142996e+00,3.754408661907416e+00];
+  const pL=0.02425,pH=1-pL;
+  let q;
+  if(p<pL){q=Math.sqrt(-2*Math.log(p));return(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+  if(p<=pH){q=p-.5;const r=q*q;return(((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/((((( b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);}
+  q=Math.sqrt(-2*Math.log(1-p));return-(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+}
+
+function mcSim(cos,rho,N_MC,lgd,tdefs){
+  const thr=cos.map(c=>normInv(c.pd));
+  const sr=Math.sqrt(rho),sr1=Math.sqrt(1-rho);
+  const nc=cos.length;
+  const kC=new Array(nc+1).fill(0);
+  const tA=tdefs.map(()=>0),tF=tdefs.map(()=>0),tEL=tdefs.map(()=>0);
+  for(let s=0;s<N_MC;s++){
+    const M=rn();let k=0;
+    for(let i=0;i<nc;i++){if(sr*M+sr1*rn()<thr[i])k++;}
+    kC[k]++;
+    const l=k*lgd;
+    tdefs.forEach((t,i)=>{
+      if(l>t.attach+1e-9)tA[i]++;
+      if(l>=t.detach-1e-9)tF[i]++;
+      tEL[i]+=Math.max(Math.min(l,t.detach)-t.attach,0);
+    });
+  }
+  return{
+    pmf:kC.map(c=>c/N_MC),
+    tranches:tdefs.map((t,i)=>({...t,pA:tA[i]/N_MC,pF:tF[i]/N_MC,el:tEL[i]/N_MC}))
+  };
+}
+
+// ══════════════════════════════════════
+// FIXED PORTFOLIO RENDERING
+// ══════════════════════════════════════
+let dist=conv(companies,LGD);
+let trs=calcTr(dist,LGD,TDEFS);
+const fmt=(v,d=2)=>(v*100).toFixed(d)+'%';
+const dc=id=>{if(ch[id]){ch[id].destroy();delete ch[id];}};
+
+function renderAll(){
+  // Waterfall (shown on Convolution tab - we removed it from overview)
+  // Conv summary table
+  const cols=["equity","mezz-l","senior-l"];
+  document.getElementById('conv-summary-tbody').innerHTML=trs.map((t,i)=>`
+    <tr>
+      <td style="color:var(--${cols[i]})">${t.name}</td>
+      <td class="r mono">${fmt(t.attach,0)}</td>
+      <td class="r mono">${fmt(t.detach,0)}</td>
+      <td class="r mono" style="color:var(--${cols[i]})">${fmt(t.pA,4)}</td>
+      <td class="r mono">${fmt(t.pF,4)}</td>
+      <td class="r mono">${fmt(t.el,4)}</td>
+      <td class="r mono">${fmt(t.el/(t.detach-t.attach),4)}</td>
+    </tr>`).join('');
+  // Portfolio table
+  document.getElementById('port-tbody').innerHTML=companies.map((c,i)=>`
+    <tr>
+      <td style="color:var(--dim)">${i+1}</td>
+      <td>${c.name}</td>
+      <td class="mono">${c.ticker}</td>
+      <td><span class="rb rb-${c.rating}">${c.rating}</span></td>
+      <td class="r mono">${fmt(c.pd,2)}</td>
+      <td class="r mono">10.0%</td>
+      <td class="r mono">${fmt(LGD,1)}</td>
+      <td style="font-size:12px;color:var(--muted)">${c.industry}</td>
+    </tr>`).join('');
+  // Conv stats
+  const avgPD=companies.reduce((s,c)=>s+c.pd,0)/n;
+  const pEL=dist.reduce((s,p,k)=>s+p*k*LGD,0);
+  const eK=dist.reduce((s,p,k)=>s+p*k,0);
+  document.getElementById('conv-avgpd').textContent=fmt(avgPD,2);
+  document.getElementById('conv-p0').textContent=fmt(dist[0],2);
+  document.getElementById('conv-el').textContent=fmt(pEL,3);
+  document.getElementById('conv-ek').textContent=eK.toFixed(3);
+  // Conv loss table
+  document.getElementById('conv-loss-tbody').innerHTML=dist.map((p,k)=>{
+    const l=k*LGD;
+    let lab='—',bc='#c8d0e0';
+    if(l>0.10+1e-9){lab='超出所有 tranche';bc='#8899aa';}
+    else if(l>0.06+1e-9){lab='Equity+Mezz+Senior';bc='#b88a18';}
+    else if(l>0+1e-9){lab='Equity+Mezz';bc='#c94a1a';}
+    const cg=dist.slice(k).reduce((a,x)=>a+x,0);
+    return`<tr>
+      <td class="mono">${k}</td>
+      <td class="mono">${fmt(l,0)}</td>
+      <td class="mono"><span style="display:inline-block;width:${Math.max(Math.round(p/dist[0]*120),2)}px;height:5px;border-radius:2px;background:${bc};margin-right:5px;vertical-align:middle"></span>${fmt(p,4)}</td>
+      <td class="mono">${fmt(cg,4)}</td>
+      <td style="font-size:11px;color:var(--muted)">${lab}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderConvLossChart(id){
+  dc(id);
+  const cols=dist.map((_,k)=>{
+    if(k===0)return'#c8d0e0';if(k===1)return'#c94a1a';if(k===2)return'#b88a18';return'#8899aa';
+  });
+  ch[id]=new Chart(document.getElementById(id),{type:'bar',
+    data:{labels:dist.map((_,k)=>fmt(k*LGD,0)),datasets:[{data:dist.map(p=>+(p*100).toFixed(5)),backgroundColor:cols,borderWidth:0,borderRadius:2}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'P = '+c.parsed.y.toFixed(4)+'%'}}},
+      scales:{x:{ticks:{color:'#9aa3b8',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#9aa3b8',font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.05)'}}}}});
+}
+function renderConvTrChart(){
+  dc('convTrChart');
+  ch.convTrChart=new Chart(document.getElementById('convTrChart'),{type:'bar',
+    data:{labels:['Equity','Mezzanine','Senior'],datasets:[
+      {label:'P(any loss)',data:trs.map(t=>+(t.pA*100).toFixed(4)),backgroundColor:['#c94a1a','#c49020','#2472c8'],borderWidth:0,borderRadius:3},
+      {label:'P(wipeout)', data:trs.map(t=>+(t.pF*100).toFixed(4)),backgroundColor:['#8a2010','#8a6010','#0e3d80'],borderWidth:0,borderRadius:3},
+      {label:'EL%',        data:trs.map(t=>+(t.el*100).toFixed(4)),  backgroundColor:['#0a5030','#3a6010','#0a3060'],borderWidth:0,borderRadius:3},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y.toFixed(4)+'%'}}},
+      scales:{x:{ticks:{color:'#9aa3b8',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#9aa3b8',font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.05)'}}}}});
+}
+
+// ══════════════════════════════════════
+// COPULA (FIXED PORTFOLIO)
+// ══════════════════════════════════════
+let lastMCResult=null;
+const rhoHistory=[];
+
+function updateRhoDisplay(){
+  document.getElementById('rho-val').textContent=(+document.getElementById('rho-slider').value).toFixed(2);
+}
+async function runMonteCarlo(){
+  const rho=+document.getElementById('rho-slider').value;
+  const btn=document.getElementById('run-btn'),st=document.getElementById('mc-status');
+  btn.disabled=true;btn.textContent='⏳ Running...';
+  st.textContent='Simulating 100,000 paths...';st.style.color='var(--mezz-l)';
+  await new Promise(r=>setTimeout(r,20));
+  const res=mcSim(companies,rho,100000,LGD,TDEFS);
+  lastMCResult={rho,res};
+  const idx=rhoHistory.findIndex(d=>Math.abs(d[0]-rho)<.001);
+  if(idx>=0)rhoHistory[idx]=[rho,res.tranches[2].pA];
+  else rhoHistory.push([rho,res.tranches[2].pA]);
+  rhoHistory.sort((a,b)=>a[0]-b[0]);
+  // update results table
+  const cols2=["equity","mezz-l","senior-l"];
+  document.getElementById('mc-results-tbody').innerHTML=res.tranches.map((t,i)=>`
+    <tr>
+      <td style="color:var(--${cols2[i]})">${t.name}</td>
+      <td class="r mono" style="color:var(--cop-l)">${fmt(t.pA,4)}</td>
+      <td class="r mono">${fmt(t.pF,4)}</td>
+      <td class="r mono">${fmt(t.el,4)}</td>
+    </tr>`).join('');
+  // MC PMF chart
+  renderMCPMF(res.pmf,'mc-pmf-chart');
+  renderRhoCharts();
+  updateComparison(res,rho);
+  btn.disabled=false;btn.textContent='▶ Run Simulation';
+  st.textContent=`完成 — ρ=${rho.toFixed(2)}，100,000 paths`;st.style.color='var(--green)';
+}
+function renderMCPMF(pmf,cid){
+  dc(cid);
+  const c2=pmf.map((_,k)=>k===0?'rgba(36,114,200,.3)':k===1?'rgba(201,74,26,.7)':k===2?'rgba(184,138,24,.7)':'rgba(136,153,170,.6)');
+  ch[cid]=new Chart(document.getElementById(cid),{type:'bar',
+    data:{labels:dist.map((_,k)=>fmt(k*LGD,0)),datasets:[{data:pmf.map(p=>+(p*100).toFixed(4)),backgroundColor:c2,borderWidth:0,borderRadius:2}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'P = '+c.parsed.y.toFixed(4)+'%'}}},
+      scales:{x:{ticks:{color:'#9aa3b8',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#9aa3b8',font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.05)'}}}}});
+}
+function renderRhoCharts(){
+  ['rho-senior-chart','cmp-rho-chart'].forEach(id=>{
+    dc(id);
+    if(!document.getElementById(id))return;
+    const bl=trs[2].pA*100;
+    ch[id]=new Chart(document.getElementById(id),{type:'line',
+      data:{labels:rhoHistory.map(d=>d[0].toFixed(2)),datasets:[
+        {label:'Copula MC — Senior P(any)',data:rhoHistory.map(d=>+(d[1]*100).toFixed(4)),borderColor:'#c94a1a',backgroundColor:'rgba(201,74,26,.08)',borderWidth:2,pointRadius:5,fill:true,tension:.2},
+        {label:`Convolution ρ=0 (${fmt(trs[2].pA,4)})`,data:rhoHistory.map(()=>+bl.toFixed(4)),borderColor:'#9aa3b8',borderWidth:1.5,borderDash:[4,4],pointRadius:0,fill:false}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{labels:{color:'#5a6480',font:{size:11},boxWidth:10}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y.toFixed(4)+'%'}}},
+        scales:{x:{title:{display:true,text:'ρ',color:'#9aa3b8',font:{size:11}},ticks:{color:'#9aa3b8',font:{size:11}},grid:{display:false}},
+                y:{ticks:{color:'#9aa3b8',font:{size:11},callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.05)'},title:{display:true,text:'Senior P(any loss) %',color:'#9aa3b8',font:{size:11}}}}}});
+  });
+}
+function updateComparison(res,rho){
+  const cols2=["equity","mezz-l","senior-l"];
+  document.getElementById('cmp-tbody').innerHTML=res.tranches.map((t,i)=>{
+    const c=trs[i],dp=t.pA-c.pA,de=t.el-c.el;
+    const sign=v=>v>=0?'+':'';
+    const col=v=>v>.001?'color:var(--cop-l)':v<-.001?'color:var(--green)':'color:var(--dim)';
+    return`<tr>
+      <td style="color:var(--${cols2[i]})">${t.name}</td>
+      <td class="r mono" style="color:var(--conv)">${fmt(c.pA,4)}</td>
+      <td class="r mono" style="color:var(--cop-l)">${fmt(t.pA,4)}</td>
+      <td class="r mono" style="${col(dp)}">${sign(dp)}${fmt(Math.abs(dp),4)}</td>
+      <td class="r mono" style="color:var(--conv)">${fmt(c.el,4)}</td>
+      <td class="r mono" style="color:var(--cop-l)">${fmt(t.el,4)}</td>
+      <td class="r mono" style="${col(de)}">${sign(de)}${fmt(Math.abs(de),4)}</td>
+    </tr>`;
+  }).join('');
+  // PMF comparison chart
+  dc('cmp-pmf-chart');
+  ch['cmp-pmf-chart']=new Chart(document.getElementById('cmp-pmf-chart'),{type:'bar',
+    data:{labels:dist.map((_,k)=>fmt(k*LGD,0)),datasets:[
+      {label:'Convolution ρ=0',data:dist.map(p=>+(p*100).toFixed(4)),backgroundColor:'rgba(36,114,200,.5)',borderColor:'#2472c8',borderWidth:1,borderRadius:2},
+      {label:`Copula ρ=${rho.toFixed(2)}`,data:res.pmf.map(p=>+(p*100).toFixed(4)),backgroundColor:'rgba(201,74,26,.5)',borderColor:'#c94a1a',borderWidth:1,borderRadius:2},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#5a6480',font:{size:11},boxWidth:10}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y.toFixed(4)+'%'}}},
+      scales:{x:{ticks:{color:'#9aa3b8',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#9aa3b8',font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.05)'}}}}});
+}
+
+// ══════════════════════════════════════
+// SCENARIO + SENSITIVITY
+// ══════════════════════════════════════
+function renderScenChart(){
+  dc('scenChart');
+  const scens=Array.from({length:11},(_,nBB)=>{
+    const cos=[...Array(nBB).fill({pd:.0652}),...Array(10-nBB).fill({pd:.1693})];
+    const d2=conv(cos,.06),t2=calcTr(d2,.06,TDEFS);
+    return{nBB,eq:t2[0].pA,sr:t2[2].pA,el:d2.reduce((s,p,k)=>s+p*k*.06,0)};
+  });
+  ch.scenChart=new Chart(document.getElementById('scenChart'),{type:'line',
+    data:{labels:scens.map(s=>`${s.nBB} BB`),datasets:[
+      {label:'Equity P(any)',data:scens.map(s=>+(s.eq*100).toFixed(4)),borderColor:'#c94a1a',backgroundColor:'transparent',borderWidth:2,pointRadius:4,tension:.3},
+      {label:'Senior P(any)',data:scens.map(s=>+(s.sr*100).toFixed(4)),borderColor:'#2472c8',backgroundColor:'transparent',borderWidth:2,pointRadius:4,tension:.3},
+      {label:'Portfolio EL', data:scens.map(s=>+(s.el*100).toFixed(4)),borderColor:'#0a6e48',backgroundColor:'transparent',borderWidth:1.5,pointRadius:3,tension:.3,borderDash:[4,3]},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#5a6480',font:{size:11},boxWidth:10}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y.toFixed(4)+'%'}}},
+      scales:{x:{ticks:{color:'#9aa3b8',font:{size:11}},grid:{display:false},title:{display:true,text:'BB-rated companies (out of 10)',color:'#9aa3b8',font:{size:11}}},
+              y:{ticks:{color:'#9aa3b8',font:{size:11},callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.05)'},title:{display:true,text:'Probability (%)',color:'#9aa3b8',font:{size:11}}}}}});
+}
+function updateSens(){
+  RR=+document.getElementById('rr-slider').value/100;
+  document.getElementById('rr-val').textContent=(RR*100).toFixed(0)+'%';
+  LGD=(1-RR)/n;
+  document.getElementById('lgd-disp').textContent=(LGD*100).toFixed(1)+'%';
+  const d2=conv(companies,LGD),t2=calcTr(d2,LGD,TDEFS);
+  dc('sensChart');
+  ch.sensChart=new Chart(document.getElementById('sensChart'),{type:'bar',
+    data:{labels:['Equity (0–3%)','Mezzanine (3–6%)','Senior (6–10%)'],datasets:[
+      {label:'P(any loss)',data:t2.map(t=>+(t.pA*100).toFixed(4)),backgroundColor:['#c94a1a','#b88a18','#2472c8'],borderWidth:0,borderRadius:3},
+      {label:'P(wipeout)', data:t2.map(t=>+(t.pF*100).toFixed(4)),backgroundColor:['#7a2010','#7a5808','#0e3d80'],borderWidth:0,borderRadius:3},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#5a6480',font:{size:11},boxWidth:10}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y.toFixed(4)+'%'}}},
+      scales:{x:{ticks:{color:'#9aa3b8'},grid:{display:false}},y:{ticks:{color:'#9aa3b8',callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.05)'},max:100}}}});
+  renderSensTbl(d2,t2);
+}
+function renderSensTbl(d2,t2){
+  document.getElementById('sens-tbody').innerHTML=[0,10,20,30,40,50,60,70,80].map(rrp=>{
+    const rr=rrp/100,lgd2=(1-rr)/n,d3=conv(companies,lgd2),t3=calcTr(d3,lgd2,TDEFS);
+    const pEL=d3.reduce((s,p,k)=>s+p*k*lgd2,0);
+    return`<tr class="${rrp===Math.round(RR*100)?'hl':''}">
+      <td class="mono">${rrp}%</td><td class="mono">${((1-rr)/n*100).toFixed(1)}%</td>
+      <td class="mono" style="color:var(--equity)">${fmt(t3[0].pA,4)}</td>
+      <td class="mono" style="color:var(--mezz-l)">${fmt(t3[1].pA,4)}</td>
+      <td class="mono" style="color:var(--senior-l)">${fmt(t3[2].pA,4)}</td>
+      <td class="mono">${fmt(pEL,4)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════
+// DESIGN SANDBOX — rating-count sliders
+// ══════════════════════════════════════
+const DS_RATINGS=['AAA','AA','A','BBB','BB','B','CCC/C'];
+const DS_COLORS={AAA:'#0a6e48',AA:'#0a6e48',A:'#0a6e48',BBB:'#1a5faa',BB:'#1a5faa',B:'#c49020','CCC/C':'#c94a1a'};
+// State: count of each rating
+let dsCounts={AAA:0,AA:0,A:0,BBB:0,BB:5,B:5,'CCC/C':0};
+let dsA1=3,dsA2=6,dsRho=.3,dsInited=false;
+
+function dsInit(){
+  if(dsInited)return;dsInited=true;
+  dsRenderSliders();dsUpdateCuts();dsConvCalc();
+}
+
+function dsRenderSliders(){
+  document.getElementById('ds-rating-sliders').innerHTML=DS_RATINGS.map(r=>`
+    <div style="display:grid;grid-template-columns:70px 1fr 44px;gap:.6rem;align-items:center;margin-bottom:.5rem;">
+      <span class="rb rb-${r.replace('/','')}" style="font-size:10px;text-align:center;">${r}</span>
+      <input type="range" min="0" max="50" value="${dsCounts[r]}" step="1"
+        style="accent-color:${DS_COLORS[r]};"
+        oninput="dsCounts['${r}']=+this.value;dsUpdateCountDisplay();dsConvCalc();">
+      <span id="ds-cnt-${r.replace('/','')}" style="font-family:'DM Mono',monospace;font-size:12px;font-weight:500;color:${DS_COLORS[r]};text-align:right;">${dsCounts[r]}</span>
+    </div>`).join('');
+  dsUpdateCountDisplay();
+}
+
+function dsUpdateCountDisplay(){
+  const total=Object.values(dsCounts).reduce((s,v)=>s+v,0);
+  document.getElementById('ds-total-n').textContent=total||'0';
+  document.getElementById('ds-cnt').textContent=total||'0';
+  // update each count display
+  DS_RATINGS.forEach(r=>{
+    const el=document.getElementById('ds-cnt-'+r.replace('/',''));
+    if(el)el.textContent=dsCounts[r];
+  });
+  // rating badges
+  const dist=DS_RATINGS.filter(r=>dsCounts[r]>0).map(r=>`<span class="rb rb-${r.replace('/','')}" style="font-size:10px">${r}×${dsCounts[r]}</span>`).join('');
+  document.getElementById('ds-rating-dist').innerHTML=dist||'<span style="font-size:11px;color:var(--dim)">尚未選擇任何公司</span>';
+}
+
+function getDsCos(){
+  const cos=[];
+  DS_RATINGS.forEach(r=>{for(let i=0;i<dsCounts[r];i++)cos.push({pd:PD_MAP[r]||.01});});
+  return cos;
+}
+
+function dsConvCalc(){
+  if(!dsInited)return;
+  const cos=getDsCos();
+  if(cos.length===0){['dc-eq','dc-mz','dc-sr'].forEach(p=>['pa','pf','el'].forEach(s=>document.getElementById(`${p}-${s}`).textContent='—'));return;}
+  const a1=dsA1/100,a2=dsA2/100;
+  const N=cos.length;
+  const lgd=1/N*(1-.40);// equal weight, RR=40%
+  const td=[{name:'Equity',attach:0,detach:a1},{name:'Mezzanine',attach:a1,detach:a2},{name:'Senior',attach:a2,detach:1}];
+  const d=conv(cos,lgd);
+  const tr=calcTr(d,lgd,td);
+  const ids=[['dc-eq',0],['dc-mz',1],['dc-sr',2]];
+  ids.forEach(([p,i])=>{
+    document.getElementById(p+'-pa').textContent=fmt(tr[i].pA,4);
+    document.getElementById(p+'-pf').textContent=fmt(tr[i].pF,4);
+    document.getElementById(p+'-el').textContent=fmt(tr[i].el,4);
+  });
+  // stats
+  const avgPD=cos.reduce((s,c)=>s+c.pd,0)/N;
+  document.getElementById('ds-avgpd').textContent=fmt(avgPD,2);
+  document.getElementById('ds-p0').textContent=fmt(d[0],2);
+  // PMF
+  dc('ds-pmf-chart');
+  const c2=d.map((_,k)=>k===0?'#c8d0e0':k===1?'#c94a1a':k===2?'#b88a18':'#8899aa');
+  ch['ds-pmf-chart']=new Chart(document.getElementById('ds-pmf-chart'),{type:'bar',
+    data:{labels:d.map((_,k)=>fmt(k*lgd,0)),datasets:[{data:d.map(p=>+(p*100).toFixed(4)),backgroundColor:c2,borderWidth:0,borderRadius:2}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'P = '+c.parsed.y.toFixed(4)+'%'}}},
+      scales:{x:{ticks:{color:'#9aa3b8',font:{size:9},maxRotation:0},grid:{display:false}},y:{ticks:{color:'#9aa3b8',font:{size:9},callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.05)'}}}}});
+}
+
+async function dsRun(){
+  const cos=getDsCos();
+  if(cos.length===0){alert('請先設定至少一家公司');return;}
+  const btn=document.getElementById('ds-run-btn'),st=document.getElementById('ds-status');
+  btn.disabled=true;btn.textContent='⏳ Running...';
+  st.textContent='Convolution + Copula MC (50,000 paths)...';st.style.color='var(--mezz-l)';
+  await new Promise(r=>setTimeout(r,20));
+  dsConvCalc();
+  const a1=dsA1/100,a2=dsA2/100;
+  const N=cos.length,lgd=1/N*.6;
+  const td=[{name:'Equity',attach:0,detach:a1},{name:'Mezzanine',attach:a1,detach:a2},{name:'Senior',attach:a2,detach:1}];
+  const thr=cos.map(c=>normInv(c.pd));
+  const sr=Math.sqrt(dsRho),sr1=Math.sqrt(1-dsRho);
+  const tA=td.map(()=>0),tF=td.map(()=>0),tEL=td.map(()=>0);
+  for(let s=0;s<50000;s++){
+    const M=rn();let loss=0;
+    for(let i=0;i<N;i++){if(sr*M+sr1*rn()<thr[i])loss+=lgd;}
+    td.forEach((t,i)=>{
+      if(loss>t.attach+1e-9)tA[i]++;
+      if(loss>=t.detach-1e-9)tF[i]++;// >= for wipeout
+      tEL[i]+=Math.max(Math.min(loss,t.detach)-t.attach,0);
+    });
+  }
+  const mcIds=[['dm-eq',0],['dm-mz',1],['dm-sr',2]];
+  mcIds.forEach(([p,i])=>{
+    document.getElementById(p+'-pa').textContent=fmt(tA[i]/50000,4);
+    document.getElementById(p+'-pf').textContent=fmt(tF[i]/50000,4);
+    document.getElementById(p+'-el').textContent=fmt(tEL[i]/50000,4);
+  });
+  btn.disabled=false;btn.textContent='▶ Calculate Both Methods';
+  st.textContent=`完成 — ρ=${dsRho.toFixed(2)}，50,000 paths`;st.style.color='var(--green)';
+}
+
+function dsUpdateCuts(){
+  dsA1=+document.getElementById('ds-a1').value;
+  dsA2=+document.getElementById('ds-a2').value;
+  if(dsA2<=dsA1){dsA2=dsA1+1;document.getElementById('ds-a2').value=dsA2;}
+  document.getElementById('ds-a1-v').textContent=dsA1+'%';
+  document.getElementById('ds-a2-v').textContent=dsA2+'%';
+  const bar=document.getElementById('ds-tranche-vis');
+  const mw=dsA2-dsA1;
+  bar.innerHTML=`<div class="tv-eq" style="flex:${dsA1}">${dsA1}%</div><div class="tv-mz" style="flex:${mw}">${mw>0?mw+'%':''}</div><div class="tv-sr" style="flex:${100-dsA2}">Senior ${100-dsA2}%</div>`;
+  if(dsInited)dsConvCalc();
+}
+function dsUpdateRho(){
+  dsRho=+document.getElementById('ds-rho').value;
+  document.getElementById('ds-rho-v').textContent=dsRho.toFixed(2);
+  document.getElementById('ds-rho-label').textContent=dsRho.toFixed(2);
+}
+
+function applyPreset(type){
+  const presets={
+    base:{BB:5,B:5},
+    ig:{AA:2,A:4,BBB:4},
+    hy:{BB:6,B:4},
+    mixed:{BBB:3,BB:4,B:3}
+  };
+  DS_RATINGS.forEach(r=>dsCounts[r]=0);
+  Object.entries(presets[type]).forEach(([r,n])=>dsCounts[r]=n);
+  // sync sliders
+  DS_RATINGS.forEach(r=>{
+    const el=document.querySelector(`#ds-rating-sliders input[oninput*="'${r}'"]`)||
+              document.querySelector(`#ds-rating-sliders input[oninput*='"${r}"']`);
+    if(el)el.value=dsCounts[r];
+  });
+  dsRenderSliders();dsConvCalc();
+}
+
+// Old functions kept as stubs to avoid reference errors
+function dsSetN(){}
+function dsRebalance(){}
+function dsAdd(){}
+function dsRemove(){}
+
+// ══════════════════════════════════════
+// TAB SWITCH
+// ══════════════════════════════════════
+function sw(name,btn){
+  document.querySelectorAll('.tnav').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-section').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  if(name==='convolution'){setTimeout(()=>{renderConvLossChart('convLossChart');renderConvTrChart();},50);}
+  if(name==='comparison'){setTimeout(()=>{renderScenChart();updateSens();if(lastMCResult)updateComparison(lastMCResult.res,lastMCResult.rho);},50);}
+  if(name==='portfolio'){setTimeout(()=>{dsInit();},50);}
+}
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+renderAll();
+dsInit();
+setTimeout(()=>{renderConvLossChart('convLossChart');renderConvTrChart();},80);
+</script>
+</body>
+</html>
